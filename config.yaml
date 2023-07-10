@@ -1,0 +1,12 @@
+EUR:
+  version: "superpops"
+  n: 400
+  pops: 
+    - "EUR"
+EUR_SAS_EAS:
+  version: "superpops"
+  n: 400
+  pops:
+    - "EUR"
+    - "EAS"
+    - "SAS"

@@ -1,0 +1,86 @@
+#!python3
+
+import pandas as pd 
+import numpy as np 
+
+
+### --------- Configuration Information ---------- ###
+configfile: "config.yaml"
+chroms = [f'chr{i}' for i in range(1,23)]
+
+
+### --------- Setting up the targets for the workflow -------- ###
+TARGETS = []
+seed=42
+for POP in config:
+    n = config[POP]['n']
+    for chrom in chroms[1::4]:
+        TARGETS.append(f"results/sfs_files/{POP}.{n}.{seed}.{chrom}.sfs.tsv.gz")
+
+rule all:
+    input:
+        TARGETS
+
+
+rule global_superpops:
+    input:
+        pop_tsv = "data/sample_1kg_metadata.tsv"
+    output:
+        txt = "results/population_files/{POP}.{n}.{seed}.txt"
+    wildcard_constraints:
+        n="\d+",
+        seed="\d+"
+    params:
+        poplist = lambda wildcards: config[wildcards.POP]['pops'],
+        version = lambda wildcards: config[wildcards.POP]['version']
+    run:
+        np.random.seed(int(wildcards.seed))
+        sample_df = pd.read_csv(input.pop_tsv, "\t")
+        assert "superpopulation" in sample_df.columns 
+        assert "population" in sample_df.columns
+        assert "KGP_sample_id" in sample_df.columns
+        nsamp = int(int(wildcards.n) / len(params.poplist))
+        samples = []
+        for p in params.poplist:
+            if params.version == "superpops":
+                indivs = sample_df[sample_df.superpopulation == p].KGP_sample_id.values 
+            else:
+                indivs = sample_df[sample_df.population == p].KGP_sample_id.values
+            for s in np.random.choice(indivs, size=nsamp, replace=False):
+                samples.append(s)
+        with open(output.txt, "w+") as out:
+            for s in samples:
+                out.write(s + "\n")
+
+rule subset_vcf:
+    """Subset and drop the sites of the VCF from the 1KG to reduce space and save annotations."""
+    input:
+        vcf = "/scratch4/rmccoy22/sharedData/populationDatasets/1KGP_NYGC/GRCh38_phased_vcfs/1kGP_high_coverage_Illumina.{chrom}.filtered.SNV_INDEL_SV_phased_panel.vcf.gz",
+        tbi = "/scratch4/rmccoy22/sharedData/populationDatasets/1KGP_NYGC/GRCh38_phased_vcfs/1kGP_high_coverage_Illumina.{chrom}.filtered.SNV_INDEL_SV_phased_panel.vcf.gz.tbi",
+        popfile = "results/population_files/{POP}.{n}.{seed}.txt"
+    output:
+        vcfgz = temp("results/sfs_files/{POP}.{n}.{seed}.{chrom}.sfs.vcf.gz"),
+        vcfgz_tbi = temp("results/sfs_files/{POP}.{n}.{seed}.{chrom}.sfs.vcf.gz.tbi")
+    threads: 8
+    shell:
+       "bcftools view -S {input.popfile} -c 1 -v snps -G {input.vcf} --threads {threads} | bgzip -@{threads} > {output.vcfgz}; tabix -f {output.vcfgz}" 
+
+
+rule annotate_vcf:
+    input:
+        vcfgz = "results/sfs_files/{POP}.{n}.{seed}.{chrom}.sfs.vcf.gz",
+        vcfgz_tbi = "results/sfs_files/{POP}.{n}.{seed}.{chrom}.sfs.vcf.gz.tbi"
+    output:
+        anno_vcfgz = "results/sfs_files/{POP}.{n}.{seed}.{chrom}.sfs.anno.vcf.gz",
+        anno_vcfgz_tbi = "results/sfs_files/{POP}.{n}.{seed}.{chrom}.sfs.anno.vcf.gz.tbi"
+    shell:
+        "snpEff hg38 {input.vcfgz} | bgzip -@{threads} > {output.anno_vcfgz}; tabix {output.anno_vcfgz}"
+
+rule extract_sfs:
+    """Extract the SFS."""
+    input:
+        anno_vcfgz = "results/sfs_files/{POP}.{n}.{seed}.{chrom}.sfs.anno.vcf.gz",
+    output:
+        "results/sfs_files/{POP}.{n}.{seed}.{chrom}.sfs.tsv.gz"
+    shell:
+        "bcftools query -f \"%CHROM\t%POS\t%ID\t%AN\t%AC\t%ANN\n\" {input.anno_vcfgz} | awk \'{{split($6, info, \"|\"); OFS=\"\t\"; print $1, $2, $3, $4, $5, info[2], info[3]}}\' | gzip > {output}"
