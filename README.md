@@ -1,7 +1,9 @@
-## Obtaining Population-Specific SFS from 1KG Data
+## Obtaining Population-Specific SFS from empirical datasets.
 
-This workflow calculates geographically stratified SFS from the 1000 Genomes NYGC High Coverage Data
+This workflow calculates geographically stratified SFS from:
 
+1. The 1000 Genomes NYGC High Coverage Data
+2. The gnomAD v3 sequencing data
 
 ### Configuring the workflow
 
