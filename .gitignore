@@ -1,5 +1,6 @@
 results/
 notebooks/
+sandbox/
 *.out
 *.txt
 *.html
