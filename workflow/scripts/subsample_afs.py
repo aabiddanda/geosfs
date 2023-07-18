@@ -4,6 +4,8 @@
 
 import numpy as np 
 import pandas as pd
+import click 
+
 
 def resample_alleles(ac, an, min_n = 100, n=5000, seed=42):
     """Resample alleles for a given sample-size.
@@ -50,10 +52,32 @@ def resamp_alleles_multipop(acs, ans, props=np.array([1.0, 0.0, 0.0, 0.0, 0.0]),
     meta_afs = meta_acs / n
     return meta_acs, meta_afs, joint_acs, joint_afs, new_ns
 
+def main(sfs_tsv, poplist, proportions, outfile, seed=42):
+    raise NotImplementedError("This function is not implemented yet!")
+
 
 if __name__ == "__main__":
-    chr22_sfs_df = pd.read_csv(snakemake.input['gnomAD_jsfs'], sep="\t")
-    # Any variants not called in a single population will be dropped ... 
-    chr22_sfs_df[chr22_sfs_df == '.'] = np.nan
-    chr22_sfs_df.dropna(subset=['AN_NFE', 'AN_EAS', 'AN_SAS', 'AN_MID', 'AN_OTH'], inplace=True)
-    chr22_sfs_df
+    try:
+        sfs_df = pd.read_csv(snakemake.input['gnomAD_jsfs'], sep="\t")
+        # Any variants not called in a single population will be dropped ... 
+        sfs_df[sfs_df == '.'] = np.nan
+        poplist = snakemake.params['poplist']
+        an_pops = [f'AN_{p}' for p in poplist]
+        ac_pops = [f'AC_{p}' for p in poplist]
+        pop_props = snakemake.params["props"]
+        sfs_df.dropna(subset=an_pops, inplace=True)
+        
+        # Obtain the joint allele counts for subsampling ... 
+        joint_acs = sfs_df[ac_pops].astype(int).values
+        joint_ans = sfs_df[an_pops].astype(int).values
+        max_pop_n = joint_ans.max(axis=0)
+        print(max_pop_n)
+        subsamp_acs1, subsamp_acs1, _, _, ns1 = resamp_alleles_multipop(acs=joint_acs, ans=joint_ans, props=pop_props, n=int(snakemake.wildcards['n']))
+        
+        subsamp_sfs_df = sfs_df[['Annot', 'Effect']].iloc[joint_acs > 0,:]
+        subsamp_sfs_df['AC'] = subsamp_acs1
+        subsamp_sfs_df['AF'] = subsamp_acs1
+        subsamp_sfs_df['N'] = int(snakemake.wildcards['n'])
+        subsamp_sfs_df.to_csv(snakemake.output['subsamp_sfs_tsv'], sep="\t", index=None)
+    except:
+        main()
