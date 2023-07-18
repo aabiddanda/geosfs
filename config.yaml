@@ -1,20 +1,21 @@
-KG_PHASE3_NYGC:
-  EUR:
-    version: "superpops"
-    n: 400
-    pops: 
-      - "EUR"
-    chroms:
-      - "chr22"
-  EUR_SAS_EAS:
-    version: "superpops"
-    n: 400
-    pops:
-      - "EUR"
-      - "EAS"
-      - "SAS"
-    chroms:
-      - "chr22"
+#KG_PHASE3_NYGC:
+  #EUR:
+    #version: "superpops"
+    #n: 400
+    #pops: 
+      #- "EUR"
+    #chroms:
+      #- "none"
+  #EUR_SAS_EAS:
+    #version: "superpops"
+    #n: 400
+    #pops:
+      #- "EUR"
+      #- "EAS"
+      #- "SAS"
+    #chroms:
+      #- "none"
 GNOMAD_V3_GENOMES:
   chroms:
     - "chr22"
+    - "chr21"

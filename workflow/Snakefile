@@ -13,26 +13,26 @@ chroms = [f"chr{i}" for i in range(1, 23)]
 
 ### --------- Setting up the targets for the workflow -------- ###
 TARGETS = []
-seed = 42
-for POP in config["KG_PHASE3_NYGC"]:
-    n = config["KG_PHASE3_NYGC"][POP]["n"]
-    for c in config["KG_PHASE3_NYGC"][POP]["chroms"]:
-        if c == "none":
-            pass
-        if c == "all":
-            for c_tot in chroms:
-                TARGETS.append(
-                    f"results/sfs_files/kg_nygc_phase3/{POP}.{n}.{seed}.{c_tot}.sfs.tsv.gz"
-                )
-        else:
-            TARGETS.append(
-                f"results/sfs_files/kg_nygc_phase3/{POP}.{n}.{seed}.{c}.sfs.tsv.gz"
-            )
+# seed = 42
+# for POP in config["KG_PHASE3_NYGC"]:
+# n = config["KG_PHASE3_NYGC"][POP]["n"]
+# for c in config["KG_PHASE3_NYGC"][POP]["chroms"]:
+# if c == "none":
+# pass
+# elif c == "all":
+# for c_tot in chroms:
+# TARGETS.append(
+# f"results/sfs_files/kg_nygc_phase3/{POP}.{n}.{seed}.{c_tot}.sfs.tsv.gz"
+# )
+# else:
+# TARGETS.append(
+# f"results/sfs_files/kg_nygc_phase3/{POP}.{n}.{seed}.{c}.sfs.tsv.gz"
+#             )
 
 for c in config["GNOMAD_V3_GENOMES"]["chroms"]:
     if c == "none":
         pass
-    if c == "all":
+    elif c == "all":
         for c_tot in chroms:
             TARGETS.append(
                 f"results/sfs_files/gnomAD_v3/geosfs.gnomad_r3.1.2.genomes.{c_tot}.v3_expanded.tsv.gz"
@@ -132,7 +132,7 @@ rule extract_sfs_gnomAD_v3:
         chrom="chr\d+",
     shell:
         """
-        bcftools query -i \"TYPE=\'snp\' && AC > 0\" -f \"%CHROM\t%POS\t%ID\t%REF\t%ALT\t%gnomad_AC_nfe\t%gnomad_AN_nfe\t%gnomad_AC_eas\t%gnomad_AN_eas\t%gnomad_AC_sas\t%gnomad_AN_sas\t%gnomad_AC_mid\t%gnomad_AN_mid\t%gnomad_AC_oth\t%gnomad_AN_oth\t%vep\n\" https://gnomad-public-us-east-1.s3.amazonaws.com/release/3.1.2/vcf/genomes/gnomad.genomes.v3.1.2.hgdp_tgp.{wildcards.chrom}.vcf.bgz | awk \'BEGIN{{print \"CHROM\tPOS\tID\tREF\tALT\tAC_NFE\tAN_NFE\tAC_EAS\tAN_EAS\tAC_SAS\tAN_SAS\tAC_MID\tAN_MID\tAC_OTH\tAN_OTH\"}};  {{split($16, vep, \"|\"); $16=vep[2]; $17=vep[3]; print $0}}\' | bgzip > {output.tsv}
+        bcftools query -i \"TYPE=\'snp\' && AC > 0\" -f \"%CHROM\t%POS\t%ID\t%REF\t%ALT\t%gnomad_AC_nfe\t%gnomad_AN_nfe\t%gnomad_AC_eas\t%gnomad_AN_eas\t%gnomad_AC_sas\t%gnomad_AN_sas\t%gnomad_AC_mid\t%gnomad_AN_mid\t%gnomad_AC_oth\t%gnomad_AN_oth\t%vep\n\" https://gnomad-public-us-east-1.s3.amazonaws.com/release/3.1.2/vcf/genomes/gnomad.genomes.v3.1.2.hgdp_tgp.{wildcards.chrom}.vcf.bgz | awk \'BEGIN{{OFS=\"\t\"; print \"CHROM\tPOS\tID\tREF\tALT\tAC_NFE\tAN_NFE\tAC_EAS\tAN_EAS\tAC_SAS\tAN_SAS\tAC_MID\tAN_MID\tAC_OTH\tAN_OTH\tAnnot\tEffect\"}};  {{split($16, vep, \"|\"); $16=vep[2]; $17=vep[3]; print $0}}\' | bgzip > {output.tsv}
         """
 
 
