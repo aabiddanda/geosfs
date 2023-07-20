@@ -52,32 +52,75 @@ def resamp_alleles_multipop(acs, ans, props=np.array([1.0, 0.0, 0.0, 0.0, 0.0]),
     meta_afs = meta_acs / n
     return meta_acs, meta_afs, joint_acs, joint_afs, new_ns
 
-def main(sfs_tsv, poplist, proportions, outfile, seed=42):
+
+@click.command()
+@click.option(
+    "--sfstsv", "-i", required=True, type=str, help="TSV File detailing SFS."
+)
+@click.option(
+    "--poplist", "-s", required=True, type=str, help="Comma separated list of population definitions."
+)
+@click.option(
+    "--proportions", "-p", required=True, type=str, help="Sampling proportions for each population for allele freqs."
+)
+@click.option(
+    "--seed", required=False, type=int, default=42, help="Random seed for subsampling alleles."
+)
+@click.option(
+    "--n", "-n", required=False, type=int, default=5000, help="Number of samples to subsample."
+)
+@click.option(
+    "--out",
+    "-o",
+    required=True,
+    type=str,
+    default="karyohmm",
+    help="Output file prefix.",
+)
+def main(sfs_tsv, poplist, proportions, n=5000, seed=42, out="test.subsamp.sfs.tsv.gz"):
     raise NotImplementedError("This function is not implemented yet!")
+    pops = poplist.split(',')
+    props = [float(x) for x in proportions.split(',')]
+    sfs_df = pd.read_csv(sfs_tsv, sep="\t")
+    # Any variants not called in a single population will be dropped ... 
+    sfs_df[sfs_df == '.'] = np.nan
+    an_pops = [f'AN_{p}' for p in pops]
+    ac_pops = [f'AC_{p}' for p in pops]
+    sfs_df.dropna(subset=an_pops, inplace=True)
+    joint_acs = sfs_df[ac_pops].astype(int).values
+    joint_ans = sfs_df[an_pops].astype(int).values
+    max_pop_n = joint_ans.max(axis=0)
+    print(max_pop_n)
+    subsamp_acs, subsamp_afs, _, _, ns1 = resamp_alleles_multipop(acs=joint_acs, ans=joint_ans, props=props, n=n)
+    
+    subsamp_sfs_df = sfs_df[['Annot', 'Effect']].iloc[subsamp_acs > 0,:]
+    subsamp_sfs_df['AC'] = subsamp_acs
+    subsamp_sfs_df['AF'] = subsamp_afs
+    subsamp_sfs_df['N'] = n 
+    subsamp_sfs_df.to_csv(out, sep="\t", index=None)
 
 
 if __name__ == "__main__":
-    try:
-        sfs_df = pd.read_csv(snakemake.input['gnomAD_jsfs'], sep="\t")
-        # Any variants not called in a single population will be dropped ... 
-        sfs_df[sfs_df == '.'] = np.nan
-        poplist = snakemake.params['poplist']
-        an_pops = [f'AN_{p}' for p in poplist]
-        ac_pops = [f'AC_{p}' for p in poplist]
-        pop_props = snakemake.params["props"]
-        sfs_df.dropna(subset=an_pops, inplace=True)
-        
-        # Obtain the joint allele counts for subsampling ... 
-        joint_acs = sfs_df[ac_pops].astype(int).values
-        joint_ans = sfs_df[an_pops].astype(int).values
-        max_pop_n = joint_ans.max(axis=0)
-        print(max_pop_n)
-        subsamp_acs1, subsamp_acs1, _, _, ns1 = resamp_alleles_multipop(acs=joint_acs, ans=joint_ans, props=pop_props, n=int(snakemake.wildcards['n']))
-        
-        subsamp_sfs_df = sfs_df[['Annot', 'Effect']].iloc[joint_acs > 0,:]
-        subsamp_sfs_df['AC'] = subsamp_acs1
-        subsamp_sfs_df['AF'] = subsamp_acs1
-        subsamp_sfs_df['N'] = int(snakemake.wildcards['n'])
-        subsamp_sfs_df.to_csv(snakemake.output['subsamp_sfs_tsv'], sep="\t", index=None)
-    except:
-        main()
+    # try:
+    sfs_df = pd.read_csv(snakemake.input['gnomAD_jsfs'], sep="\t")
+    # Any variants not called in a single population will be dropped ... 
+    sfs_df[sfs_df == '.'] = np.nan
+    poplist = snakemake.params['poplist']
+    an_pops = [f'AN_{p}' for p in poplist]
+    ac_pops = [f'AC_{p}' for p in poplist]
+    pop_props = snakemake.params["props"]
+    sfs_df.dropna(subset=an_pops, inplace=True)
+    # Obtain the joint allele counts for subsampling ... 
+    joint_acs = sfs_df[ac_pops].astype(int).values
+    joint_ans = sfs_df[an_pops].astype(int).values
+    max_pop_n = joint_ans.max(axis=0)
+    print(max_pop_n)
+    subsamp_acs1, subsamp_acs1, _, _, ns1 = resamp_alleles_multipop(acs=joint_acs, ans=joint_ans, props=pop_props, n=int(snakemake.params['n']), seed=int(snakemake.wildcards['n']))
+    
+    subsamp_sfs_df = sfs_df[['Annot', 'Effect']].iloc[joint_acs > 0,:]
+    subsamp_sfs_df['AC'] = subsamp_acs1
+    subsamp_sfs_df['AF'] = subsamp_acs1
+    subsamp_sfs_df['N'] = int(snakemake.wildcards['n'])
+    subsamp_sfs_df.to_csv(snakemake.output['subsamp_sfs_tsv'], sep="\t", index=None)
+    # except:
+    #     main()
