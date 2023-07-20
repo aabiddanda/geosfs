@@ -1,20 +1,11 @@
-KG_PHASE3_NYGC:
-  EUR:
-    version: "superpops"
-    n: 400
-    pops: 
-      - "EUR"
-    chroms:
-      - "chr22"
-  EUR_SAS_EAS:
-    version: "superpops"
-    n: 400
-    pops:
-      - "EUR"
-      - "EAS"
-      - "SAS"
-    chroms:
-      - "chr22"
 GNOMAD_V3_GENOMES:
   chroms:
     - "chr22"
+    - "chr21"
+  scenarios:
+    all_nfe:
+      props: "1.0, 0.0, 0.0, 0.0, 0.0" # proportion across populations
+      n: 10000 # number of samples
+    uniform_eurasia:
+      props: "0.25, 0.25, 0.25, 0.25, 0.0"
+      n: 10000

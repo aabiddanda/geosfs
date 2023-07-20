@@ -2,14 +2,21 @@
 
 This workflow calculates geographically stratified SFS from:
 
-1. The 1000 Genomes NYGC High Coverage Data
-2. The gnomAD v3 sequencing data
+1. The gnomAD v3 sequencing data
+
 
 ### Configuring the workflow
 
-To configure the workflow please look at the example `config.yaml` and the population definitions file in `data/`
+To configure the workflow please look at the example `config.yaml`
 
-You can then adapt the sample-sizes and appropriate population labels to your own specific interests.
+You can then adapt the sample-sizes and appropriate population proportions to your own specific schemes.
+
+### Key Inference Method
+
+For subsampling the script `workflow/scripts/subsample_afs.py` can be run as a standalone python script. Currently it is run using a snakemake pipeline for the GnomAD dataset but it is portable to run for another dataset as long as the file format is similar (and that the input files contain the same/similar headers). 
+
+The `config.yaml` file indicates the individual subsampling experiments that we want to perform (defining total sample size and proportion of samples from each population defined in GnomAD). 
+
 
 ### Setup the environment
 
