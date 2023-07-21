@@ -1,7 +1,8 @@
 GNOMAD_V3_GENOMES:
   chroms:
-    - "chr22"
-    - "chr21"
+    #- "chr22"
+    #- "chr21"
+    - "all"
   scenarios:
     all_nfe:
       props: "1.0, 0.0, 0.0, 0.0, 0.0" # proportion across populations
