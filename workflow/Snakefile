@@ -95,7 +95,7 @@ rule subsamp_sfs_gnomAD_v3:
 rule format_tables_UKB_exomes:
     input:
         ukb_jsfs="../data/ukb/chr{chrom}_{group}_center_allele_frequencies.frq.strat",
-        script="scripts/format_data.R",
+        script="scripts/format_data_UKB.R",
         meta="../data/ukb23158_500k_OQFE.annotations.txt"
     output:
         formatted_sfs="../results/sfs_files/ukb/{scenario}/ukb_exomes.chr{chrom}.{group}.seed{seed}.jsfs.formatted.tsv.gz",
