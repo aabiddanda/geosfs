@@ -19,12 +19,12 @@ for c in config["GNOMAD_V3_GENOMES"]["chroms"]:
         for c_tot in chroms:
             for scenario in config["GNOMAD_V3_GENOMES"]["scenarios"]:
                 TARGETS.append(
-                    f"../results/subsample_sfs/{scenario}/gnomAD_v3.{c_tot}.seed{seed}.sfs.tsv.gz"
+                    f"../results/subsample_sfs/gnomAD_v3/{scenario}/gnomAD_v3.{c_tot}.seed{seed}.sfs.tsv.gz"
                 )
     else:
         for scenario in config["GNOMAD_V3_GENOMES"]["scenarios"]:
             TARGETS.append(
-                f"../results/subsample_sfs/{scenario}/gnomAD_v3.{c}.seed{seed}.sfs.tsv.gz"
+                f"../results/subsample_sfs/gnomad_V3/{scenario}/gnomAD_v3.{c}.seed{seed}.sfs.tsv.gz"
             )
 
 for c in config["UKBB_EXOMES"]["chroms"]:
@@ -34,16 +34,16 @@ for c in config["UKBB_EXOMES"]["chroms"]:
         for c_tot in chroms:
             for scenario in config["UKBB_EXOMES"]["scenarios"]:
                 TARGETS.append(
-                    f"../results/subsample_sfs/{scenario}/gnomAD_v3.{c_tot}.all.seed{seed}.sfs.tsv.gz"
+                    f"../results/subsample_sfs/ukb/{scenario}/ukb_exomes.{c_tot}.all.seed{seed}.sfs.tsv.gz"
                 )
                 TARGETS.append(
-                    f"../results/subsample_sfs/{scenario}/gnomAD_v3.{c_tot}.WB.seed{seed}.sfs.tsv.gz"
+                    f"../results/subsample_sfs/ukb/{scenario}/ukb_exomes.{c_tot}.WB.seed{seed}.sfs.tsv.gz"
                 )
 
     else:
         for scenario in config["GNOMAD_V3_GENOMES"]["scenarios"]:
             TARGETS.append(
-                f"../results/subsample_sfs/{scenario}/gnomAD_v3.{c}.seed{seed}.sfs.tsv.gz"
+                f"../results/subsample_sfs/ukb/{scenario}/ukb_exomes.{c}.seed{seed}.sfs.tsv.gz"
             )
 
 
