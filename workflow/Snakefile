@@ -6,8 +6,6 @@ import numpy as np
 
 ### --------- Configuration Information ---------- ###
 configfile: "config.yaml"
-
-
 chroms = [f"chr{i}" for i in range(1, 23)]
 
 
@@ -21,12 +19,31 @@ for c in config["GNOMAD_V3_GENOMES"]["chroms"]:
         for c_tot in chroms:
             for scenario in config["GNOMAD_V3_GENOMES"]["scenarios"]:
                 TARGETS.append(
-                    f"results/subsample_sfs/{scenario}/gnomAD_v3.{c_tot}.seed{seed}.sfs.tsv.gz"
+                    f"../results/subsample_sfs/gnomAD_v3/{scenario}/gnomAD_v3.{c_tot}.seed{seed}.nsamp{config['GNOMAD_V3_GENOMES']['scenarios'][scenario]['n']}.sfs.tsv.gz"
                 )
     else:
         for scenario in config["GNOMAD_V3_GENOMES"]["scenarios"]:
             TARGETS.append(
-                f"results/subsample_sfs/{scenario}/gnomAD_v3.{c}.seed{seed}.sfs.tsv.gz"
+                f"../results/subsample_sfs/gnomad_V3/{scenario}/gnomAD_v3.{c}.seed{seed}.nsamp{config['GNOMAD_V3_GENOMES']['scenarios'][scenario]['n']}.sfs.tsv.gz"
+            )
+
+for c in config["UKBB_EXOMES"]["chroms"]:
+    if c == "none":
+        pass
+    elif c == "all":
+        for c_tot in chroms:
+            for scenario in config["UKBB_EXOMES"]["scenarios"]:
+                TARGETS.append(
+                    f"../results/subsample_sfs/ukb/{scenario}/ukb_exomes.{c_tot}.all.seed{seed}.nsamp{config['UKBB_EXOMES']['scenarios'][scenario]['n']}.sfs.tsv.gz"
+                )
+                TARGETS.append(
+                    f"../results/subsample_sfs/ukb/{scenario}/ukb_exomes.{c_tot}.WB.seed{seed}.nsamp{config['UKBB_EXOMES']['scenarios'][scenario]['n']}.sfs.tsv.gz"
+                )
+
+    else:
+        for scenario in config["GNOMAD_V3_GENOMES"]["scenarios"]:
+            TARGETS.append(
+                f"../results/subsample_sfs/ukb/{scenario}/ukb_exomes.{c}.seed{seed}.nsamp{config['UKBB_EXOMES']['scenarios'][scenario]['n']}.sfs.tsv.gz"
             )
 
 
@@ -43,7 +60,7 @@ rule all:
 rule extract_sfs_gnomAD_v3:
     """Extract the pop-specific AF from GnomAD v3 Genome Data with annotations."""
     output:
-        tsv="results/sfs_files/gnomAD_v3/geosfs.gnomad_r3.1.2.genomes.{chrom}.v3_expanded.tsv.gz",
+        tsv="../results/sfs_files/gnomAD_v3/geosfs.gnomad_r3.1.2.genomes.{chrom}.v3_expanded.tsv.gz",
     wildcard_constraints:
         chrom="chr\d+",
     shell:
@@ -51,12 +68,11 @@ rule extract_sfs_gnomAD_v3:
         bcftools query -i \"TYPE=\'snp\' && AC > 0\" -f \"%CHROM\t%POS\t%ID\t%REF\t%ALT\t%gnomad_AC_nfe\t%gnomad_AN_nfe\t%gnomad_AC_eas\t%gnomad_AN_eas\t%gnomad_AC_sas\t%gnomad_AN_sas\t%gnomad_AC_mid\t%gnomad_AN_mid\t%gnomad_AC_oth\t%gnomad_AN_oth\t%vep\n\" https://gnomad-public-us-east-1.s3.amazonaws.com/release/3.1.2/vcf/genomes/gnomad.genomes.v3.1.2.hgdp_tgp.{wildcards.chrom}.vcf.bgz | awk \'BEGIN{{OFS=\"\t\"; print \"CHROM\tPOS\tID\tREF\tALT\tAC_NFE\tAN_NFE\tAC_EAS\tAN_EAS\tAC_SAS\tAN_SAS\tAC_MID\tAN_MID\tAC_OTH\tAN_OTH\tAnnot\tEffect\"}};  {{split($16, vep, \"|\"); $16=vep[2]; $17=vep[3]; print $0}}\' | bgzip > {output.tsv}
         """
 
-
 rule subsamp_sfs_gnomAD_v3:
     input:
-        gnomAD_jsfs="results/sfs_files/gnomAD_v3/geosfs.gnomad_r3.1.2.genomes.{chrom}.v3_expanded.tsv.gz",
+        input_jsfs="../results/sfs_files/gnomAD_v3/geosfs.gnomad_r3.1.2.genomes.{chrom}.v3_expanded.tsv.gz",
     output:
-        subsamp_sfs_tsv="results/subsample_sfs/{scenario}/gnomAD_v3.{chrom}.seed{seed}.sfs.tsv.gz",
+        subsamp_sfs_tsv="../results/subsample_sfs/gnomAD_v3/{scenario}/gnomAD_v3.{chrom}.seed{seed}.nsamp{nsamp}.sfs.tsv.gz",
     params:
         poplist=["NFE", "EAS", "SAS", "MID", "OTH"],
         props=lambda wildcards: np.array(
@@ -74,4 +90,34 @@ rule subsamp_sfs_gnomAD_v3:
         "scripts/subsample_afs.py"
 
 
-# ----------- 3. Using panUKBB variant listings and frequencies -------------- #
+# ----------- 3. UKBB Whole Exomes -------------- #
+
+rule format_tables_UKB_exomes:
+    input:
+        ukb_jsfs="../data/ukb/chr{chrom}_{group}_center_allele_frequencies.frq.strat",
+        script="scripts/format_data_UKB.R",
+        meta="../data/ukb23158_500k_OQFE.annotations.txt"
+    output:
+        formatted_sfs="../results/sfs_files/ukb/{scenario}/ukb_exomes.chr{chrom}_{group}.seed{seed}.jsfs.formatted.tsv.gz",
+    run:
+        shell("Rscript {input.script} {input.ukb_jsfs} {output.formatted_sfs} {input.meta}")
+
+rule subsamp_sfs_UKB_exomes:
+    input:
+        input_jsfs="../results/sfs_files/ukb/{scenario}/ukb_exomes.chr{chrom}_{group}.seed{seed}.jsfs.formatted.tsv.gz",
+    output:
+        subsamp_sfs_tsv="../results/subsample_sfs/ukb/{scenario}/ukb_exomes.chr{chrom}.{group}.seed{seed}.nsamp{nsamp}.sfs.tsv.gz",
+    params:
+        poplist=["barts","birmingham","bristol","bury","cardiff","croydon","edinburgh","glasgow","hounslow","leeds","liverpool","manchester","middlesborough","newcastle","nottingham","oxford","reading","sheffield","stockport","stoke","swansea","wrexham"],
+        n=lambda wildcards: int(
+            config["UKBB_EXOMES"]["scenarios"][wildcards.scenario]["n"]
+        ),
+        props = lambda wildcards: np.array(
+            [
+                float(x)
+                for x in config["UKBB_EXOMES"]["scenarios"][wildcards.scenario]["props"].split(",")
+            ]
+        ),
+
+    script:
+        "scripts/subsample_afs.py"
