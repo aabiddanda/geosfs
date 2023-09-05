@@ -19,12 +19,12 @@ for c in config["GNOMAD_V3_GENOMES"]["chroms"]:
         for c_tot in chroms:
             for scenario in config["GNOMAD_V3_GENOMES"]["scenarios"]:
                 TARGETS.append(
-                    f"../results/subsample_sfs/gnomAD_v3/{scenario}/gnomAD_v3.{c_tot}.seed{seed}_n{config['GNOMAD_V3_GENOMES']['scenarios'][scenario]['n']}.sfs.tsv.gz"
+                    f"../results/subsample_sfs/gnomAD_v3/{scenario}/gnomAD_v3.{c_tot}.seed{seed}.nsamp{config['GNOMAD_V3_GENOMES']['scenarios'][scenario]['n']}.sfs.tsv.gz"
                 )
     else:
         for scenario in config["GNOMAD_V3_GENOMES"]["scenarios"]:
             TARGETS.append(
-                f"../results/subsample_sfs/gnomad_V3/{scenario}/gnomAD_v3.{c}.seed{seed}_n{config['GNOMAD_V3_GENOMES']['scenarios'][scenario]['n']}.sfs.tsv.gz"
+                f"../results/subsample_sfs/gnomad_V3/{scenario}/gnomAD_v3.{c}.seed{seed}.nsamp{config['GNOMAD_V3_GENOMES']['scenarios'][scenario]['n']}.sfs.tsv.gz"
             )
 
 for c in config["UKBB_EXOMES"]["chroms"]:
@@ -34,16 +34,16 @@ for c in config["UKBB_EXOMES"]["chroms"]:
         for c_tot in chroms:
             for scenario in config["UKBB_EXOMES"]["scenarios"]:
                 TARGETS.append(
-                    f"../results/subsample_sfs/ukb/{scenario}/ukb_exomes.{c_tot}.all.seed{seed}_n{config['UKBB_EXOMES']['scenarios'][scenario]['n']}.sfs.tsv.gz"
+                    f"../results/subsample_sfs/ukb/{scenario}/ukb_exomes.{c_tot}.all.seed{seed}.nsamp{config['UKBB_EXOMES']['scenarios'][scenario]['n']}.sfs.tsv.gz"
                 )
                 TARGETS.append(
-                    f"../results/subsample_sfs/ukb/{scenario}/ukb_exomes.{c_tot}.WB.seed{seed}_n{config['UKBB_EXOMES']['scenarios'][scenario]['n']}.sfs.tsv.gz"
+                    f"../results/subsample_sfs/ukb/{scenario}/ukb_exomes.{c_tot}.WB.seed{seed}.nsamp{config['UKBB_EXOMES']['scenarios'][scenario]['n']}.sfs.tsv.gz"
                 )
 
     else:
         for scenario in config["GNOMAD_V3_GENOMES"]["scenarios"]:
             TARGETS.append(
-                f"../results/subsample_sfs/ukb/{scenario}/ukb_exomes.{c}.seed{seed}_n{config['UKBB_EXOMES']['scenarios'][scenario]['n']}.sfs.tsv.gz"
+                f"../results/subsample_sfs/ukb/{scenario}/ukb_exomes.{c}.seed{seed}.nsamp{config['UKBB_EXOMES']['scenarios'][scenario]['n']}.sfs.tsv.gz"
             )
 
 
@@ -70,9 +70,9 @@ rule extract_sfs_gnomAD_v3:
 
 rule subsamp_sfs_gnomAD_v3:
     input:
-        gnomAD_jsfs="../results/sfs_files/gnomAD_v3/geosfs.gnomad_r3.1.2.genomes.{chrom}.v3_expanded.tsv.gz",
+        input_jsfs="../results/sfs_files/gnomAD_v3/geosfs.gnomad_r3.1.2.genomes.{chrom}.v3_expanded.tsv.gz",
     output:
-        subsamp_sfs_tsv="../results/subsample_sfs/gnomAD_v3/{scenario}/gnomAD_v3.{chrom}.seed{seed}.sfs.tsv.gz",
+        subsamp_sfs_tsv="../results/subsample_sfs/gnomAD_v3/{scenario}/gnomAD_v3.{chrom}.seed{seed}.nsamp{nsamp}.sfs.tsv.gz",
     params:
         poplist=["NFE", "EAS", "SAS", "MID", "OTH"],
         props=lambda wildcards: np.array(
@@ -98,15 +98,15 @@ rule format_tables_UKB_exomes:
         script="scripts/format_data_UKB.R",
         meta="../data/ukb23158_500k_OQFE.annotations.txt"
     output:
-        formatted_sfs="../results/sfs_files/ukb/{scenario}/ukb_exomes.chr{chrom}.{group}.seed{seed}.jsfs.formatted.tsv.gz",
+        formatted_sfs="../results/sfs_files/ukb/{scenario}/ukb_exomes.chr{chrom}_{group}.seed{seed}.jsfs.formatted.tsv.gz",
     run:
         shell("Rscript {input.script} {input.ukb_jsfs} {output.formatted_sfs} {input.meta}")
 
 rule subsamp_sfs_UKB_exomes:
     input:
-        formatted_sfs="../results/sfs_files/ukb/{scenario}/ukb_exomes.chr{chrom}.{group}.seed{seed}.jsfs.formatted.tsv.gz",
+        input_jsfs="../results/sfs_files/ukb/{scenario}/ukb_exomes.chr{chrom}_{group}.seed{seed}.jsfs.formatted.tsv.gz",
     output:
-        subsamp_sfs_tsv="../results/subsample_sfs/ukb/{scenario}/ukb_exomes.chr{chrom}.{group}.seed{seed}_n{nsamp}.sfs.tsv.gz",
+        subsamp_sfs_tsv="../results/subsample_sfs/ukb/{scenario}/ukb_exomes.chr{chrom}.{group}.seed{seed}.nsamp{nsamp}.sfs.tsv.gz",
     params:
         poplist=["barts","birmingham","bristol","bury","cardiff","croydon","edinburgh","glasgow","hounslow","leeds","liverpool","manchester","middlesborough","newcastle","nottingham","oxford","reading","sheffield","stockport","stoke","swansea","wrexham"],
         n=lambda wildcards: int(

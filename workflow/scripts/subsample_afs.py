@@ -102,7 +102,7 @@ def resamp_alleles_multipop(acs, ans, props=np.array([1.0, 0.0, 0.0, 0.0, 0.0]),
 
 if __name__ == "__main__":
     try:
-        sfs_df = pd.read_csv(snakemake.input['gnomAD_jsfs'], sep="\t")
+        sfs_df = pd.read_csv(snakemake.input['input_jsfs'], sep="\t")
         print("Finished Reading input SFS!")
         # Any variants not called in a single population will be dropped ... 
         sfs_df[sfs_df == '.'] = np.nan
@@ -119,6 +119,9 @@ if __name__ == "__main__":
         print(max_pop_n)
         subsamp_acs, subsamp_afs, _, _, ns1 = resamp_alleles_multipop(acs=joint_acs, ans=joint_ans, props=pop_props, n=int(snakemake.params['n']), seed=int(snakemake.wildcards['seed']))
         
+        #if 'barts' in poplist:
+        #    subsamp_sfs_df = sfs_df['Annot']#.iloc[subsamp_acs > 0,:]
+        #else:
         subsamp_sfs_df = sfs_df[['Annot', 'Effect']]#.iloc[subsamp_acs > 0,:]
         subsamp_sfs_df['AC'] = subsamp_acs#[subsamp_acs > 0]
         subsamp_sfs_df['AF'] = subsamp_afs#[subsamp_acs > 0]

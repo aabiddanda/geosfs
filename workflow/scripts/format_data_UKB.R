@@ -8,6 +8,6 @@ data<-data %>% pivot_wider(names_from=CLST,values_from=c(AC,AN))
 
 meta<-read.table(args[3]) %>% select(V1,V3) %>% rename("Annot"="V3","SNP"="V1")
 
-data_annot<-left_join(data,meta,by="SNP")%>% separate(col=SNP,into=c("CHR","POS","REF","ALT"),sep=":")
+data_annot<-left_join(data,meta,by="SNP")%>% separate(col=SNP,into=c("CHROM","POS","REF","ALT"),sep=":") %>% mutate("Effect"=NA)
 
 write_delim(data_annot,args[2],delim="\t")
