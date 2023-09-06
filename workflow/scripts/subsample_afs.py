@@ -125,6 +125,8 @@ if __name__ == "__main__":
         subsamp_sfs_df['N'] = int(snakemake.params['n']) 
         subsamp_sfs_df['CHROM'] = sfs_df['CHROM']
         subsamp_sfs_df['POS'] = sfs_df['POS']
+        subsamp_sfs_df['REF'] = sfs_df['REF'] 
+        subsamp_sfs_df['ALT'] = sfs_df['ALT']
         subsamp_sfs_df.to_csv(snakemake.output['subsamp_sfs_tsv'], sep="\t", index=None)
     except:
         main()
