@@ -13,7 +13,7 @@ chroms = [f"chr{i}" for i in range(1, 23)]
 
 
 ### --------- Setting up the targets for the workflow -------- ###
-seeds = range(1, 5)
+seeds = range(1, 21)
 TARGETS = []
 scenarios = config["GNOMAD_V3_GENOMES"]["scenarios"]
 for seed in seeds:
@@ -74,7 +74,9 @@ rule joint_sfs_filt:
         subsamp1_sfs_tsv="results/subsample_sfs/{scenario1}/gnomAD_v3.{chrom}.seed{seed}.sfs.tsv.gz",
         subsamp2_sfs_tsv="results/subsample_sfs/{scenario2}/gnomAD_v3.{chrom}.seed{seed}.sfs.tsv.gz",
     output:
-        merged_tsv="results/subsample_sfs/merged/{scenario1}.{scenario2}.gnomAD_v3.{chrom}.seed{seed}.sfs.tsv.gz",
+        merged_tsv=temp(
+            "results/subsample_sfs/merged/{scenario1}.{scenario2}.gnomAD_v3.{chrom}.seed{seed}.sfs.tsv.gz"
+        ),
     run:
         sfs1_df = pd.read_csv(input.subsamp1_sfs_tsv, sep="\t")
         sfs2_df = pd.read_csv(input.subsamp2_sfs_tsv, sep="\t")
