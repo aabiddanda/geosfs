@@ -119,10 +119,12 @@ if __name__ == "__main__":
         print(max_pop_n)
         subsamp_acs, subsamp_afs, _, _, ns1 = resamp_alleles_multipop(acs=joint_acs, ans=joint_ans, props=pop_props, n=int(snakemake.params['n']), seed=int(snakemake.wildcards['seed']))
         
-        subsamp_sfs_df = sfs_df[['Annot', 'Effect']].iloc[subsamp_acs > 0,:]
-        subsamp_sfs_df['AC'] = subsamp_acs[subsamp_acs > 0]
-        subsamp_sfs_df['AF'] = subsamp_afs[subsamp_acs > 0]
+        subsamp_sfs_df = sfs_df[['Annot', 'Effect']]
+        subsamp_sfs_df['AC'] = subsamp_acs
+        subsamp_sfs_df['AF'] = subsamp_afs
         subsamp_sfs_df['N'] = int(snakemake.params['n']) 
+        subsamp_sfs_df['CHROM'] = sfs_df['CHROM']
+        subsamp_sfs_df['POS'] = sfs_df['POS']
         subsamp_sfs_df.to_csv(snakemake.output['subsamp_sfs_tsv'], sep="\t", index=None)
     except:
         main()

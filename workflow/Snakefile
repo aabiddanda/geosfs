@@ -2,6 +2,7 @@
 
 import pandas as pd
 import numpy as np
+import itertools
 
 
 ### --------- Configuration Information ---------- ###
@@ -12,22 +13,24 @@ chroms = [f"chr{i}" for i in range(1, 23)]
 
 
 ### --------- Setting up the targets for the workflow -------- ###
-seed = 42
+seeds = range(1, 10)
 TARGETS = []
-for c in config["GNOMAD_V3_GENOMES"]["chroms"]:
-    if c == "none":
-        pass
-    elif c == "all":
-        for c_tot in chroms:
-            for scenario in config["GNOMAD_V3_GENOMES"]["scenarios"]:
+scenarios = config["GNOMAD_V3_GENOMES"]["scenarios"]
+for seed in seeds:
+    for c in config["GNOMAD_V3_GENOMES"]["chroms"]:
+        if c == "none":
+            pass
+        elif c == "all":
+            for c_tot in chroms:
+                for s1, s2 in list(itertools.combinations(scenarios, 2)):
+                    TARGETS.append(
+                        f"results/subsample_sfs/merged/{s1}.{s2}.gnomAD_v3.{c_tot}.seed{seed}.sfs.tsv.gz"
+                    )
+        else:
+            for s1, s2 in list(itertools.combinations(scenarios, 2)):
                 TARGETS.append(
-                    f"results/subsample_sfs/{scenario}/gnomAD_v3.{c_tot}.seed{seed}.sfs.tsv.gz"
+                    f"results/subsample_sfs/merged/{s1}.{s2}.gnomAD_v3.{c}.seed{seed}.sfs.tsv.gz"
                 )
-    else:
-        for scenario in config["GNOMAD_V3_GENOMES"]["scenarios"]:
-            TARGETS.append(
-                f"results/subsample_sfs/{scenario}/gnomAD_v3.{c}.seed{seed}.sfs.tsv.gz"
-            )
 
 
 # Just get the unique targets for the pipeline if possible.
@@ -56,7 +59,7 @@ rule subsamp_sfs_gnomAD_v3:
     input:
         gnomAD_jsfs="results/sfs_files/gnomAD_v3/geosfs.gnomad_r3.1.2.genomes.{chrom}.v3_expanded.tsv.gz",
     output:
-        subsamp_sfs_tsv="results/subsample_sfs/{scenario}/gnomAD_v3.{chrom}.seed{seed}.sfs.tsv.gz",
+        subsamp_sfs_tsv=temp("results/subsample_sfs/{scenario}/gnomAD_v3.{chrom}.seed{seed}.sfs.tsv.gz"),
     params:
         poplist=["NFE", "EAS", "SAS", "MID", "OTH"],
         props=lambda wildcards: np.array(
@@ -74,4 +77,35 @@ rule subsamp_sfs_gnomAD_v3:
         "scripts/subsample_afs.py"
 
 
-# ----------- 3. Using panUKBB variant listings and frequencies -------------- #
+rule joint_sfs_filt:
+    input:
+        subsamp1_sfs_tsv="results/subsample_sfs/{scenario1}/gnomAD_v3.{chrom}.seed{seed}.sfs.tsv.gz",
+        subsamp2_sfs_tsv="results/subsample_sfs/{scenario2}/gnomAD_v3.{chrom}.seed{seed}.sfs.tsv.gz",
+    output:
+        merged_tsv="results/subsample_sfs/merged/{scenario1}.{scenario2}.gnomAD_v3.{chrom}.seed{seed}.sfs.tsv.gz",
+    run:
+        sfs1_df = pd.read_csv(input.subsamp1_sfs_tsv, sep="\t")
+        sfs2_df = pd.read_csv(input.subsamp1_sfs_tsv, sep="\t")
+        for a in ["AC", "AF", "N"]:
+            assert a in sfs1_df.columns
+            assert a in sfs2_df.columns
+        sfs1_df = sfs1_df.rename(
+            columns={
+                "AC": f"AC_{wildcards['scenario1']}",
+                "AF": f"AF_{wildcards['scenario1']}",
+                "N": f"N_{wildcards['scenario1']}",
+            }
+        )
+        sfs2_df = sfs2_df.rename(
+            columns={
+                "AC": f"AC_{wildcards['scenario2']}",
+                "AF": f"AF_{wildcards['scenario2']}",
+                "N": f"N_{wildcards['scenario2']}",
+            }
+        )
+        merged_sfs_df = sfs1_df.merge(sfs2_df)
+        merged_sfs_df = merged_sfs_df[
+            (merged_sfs_df[f"AC_{wildcards['scenario1']}"] > 0)
+            | (merged_sfs_df[f"AC_{wildcards['scenario2']}"] > 0)
+        ]
+        merged_sfs_df.to_csv(output.merged_tsv, sep="\t", index=None)
